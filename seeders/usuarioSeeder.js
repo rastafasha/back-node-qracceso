@@ -9,9 +9,7 @@ const usuariosData = [
         last_name: 'Admin',
         email: 'superadmin@superadmin.com',
         password: 'password',
-        role: 'SUPERADMIN',
-        pais: 'VE',
-        ciudad: 'Caracas'
+        role: 'ADMIN',
     },
     
 ];

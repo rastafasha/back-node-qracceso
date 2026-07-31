@@ -1,5 +1,5 @@
 const AccessCode = require('../models/accesscode');
-const Property = require('../models/Property');
+const Property = require('../models/property');
 const crypto = require('crypto');
 
 // 1. GENERAR UN QR PARA UNA VISITA (Llamado desde la App Ionic del Propietario)
@@ -176,8 +176,6 @@ const getBitacoraHoy = async (req, res) => {
     return res.status(500).json({ ok: false, msg: 'Error al compilar bitácora diaria' });
   }
 };
-
-
 
 
 module.exports = {
