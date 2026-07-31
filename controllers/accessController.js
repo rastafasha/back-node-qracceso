@@ -1,4 +1,4 @@
-const AccessCode = require('../models/AccessCode');
+const AccessCode = require('../models/accesscode');
 const Property = require('../models/Property');
 const crypto = require('crypto');
 
