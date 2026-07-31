@@ -19,10 +19,7 @@ const server = require('http').Server(app);
 // Initialize socket.io with the server
 const allowedOrigins = [
   "http://localhost:4200",
-  "http://localhost:4203",
-  "https://malcolmcordova.com",
-  "https://www.malcolmcordova.com",
-  "https://admin-malcolm.vercel.app",
+  "https://app-acceso-six.vercel.app",
 ];
 
 // Configuración compartida
