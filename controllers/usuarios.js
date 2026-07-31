@@ -385,6 +385,62 @@ const change_password = (req, res) => {
     });
 }
 
+const actualizarUsuarioRole = async (req, res = response) => {
+    //todo: validar token y comprobar si el usuario es correcto
+
+    const uid = req.params.id;
+
+    try {
+        const usuarioDB = await Usuario.findById(uid);
+        if (!usuarioDB) {
+            return res.status(404).json({
+                ok: false,
+                msg: 'No existe el usuario por ese id'
+            });
+        }
+
+        //actualizaciones
+        const { password, google, email, ...campos } = req.body;
+
+        if (usuarioDB.email !== email) {
+
+            const existeEmail = await Usuario.findOne({ email });
+            if (existeEmail) {
+                return res.status(400).json({
+                    ok: false,
+                    msg: 'Ya existe un usuario con ese email'
+                });
+            }
+        }
+
+        if (!usuarioDB.google) {
+
+            campos.email = email;
+
+        } else if (usuarioDB.email !== email) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'Usuario de google no puede cambiar su correo'
+            });
+        }
+        const usuarioActualizado = await Usuario.findByIdAndUpdate(uid, campos, { new: true });
+
+       
+
+        res.json({
+            ok: true,
+            usuario: usuarioActualizado
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            ok: false,
+            msg: 'Error inesperado'
+        });
+    }
+};
+
 
 module.exports = {
     getUsuarios,
@@ -398,4 +454,5 @@ module.exports = {
     change_password,
     actualizarStatusUsuario,
     getUsuariobyCedula,
+    actualizarUsuarioRole
 };

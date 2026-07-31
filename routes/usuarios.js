@@ -17,14 +17,15 @@ const {
     change_password,
     actualizarStatusUsuario,
     getUsuariobyCedula,
-    
+    actualizarUsuarioRole
 } = require('../controllers/usuarios');
 const {
     validarJWT,
     validarAdminRole,
     validarAdminRoleOMismoUsuario,
     validarUserRole,
-    validarUserRoleOMismoUsuario
+    validarUserRoleOMismoUsuario,
+    
 } = require('../middlewares/validar-jwt');
 
 router.get('/', 
@@ -55,11 +56,18 @@ router.put('/update/:id', [
     validarCampos
 ], actualizarUsuario);
 
+router.put('/editarRole/:id', [
+    validarJWT,
+    check('role', 'el role es obligatorio').not().isEmpty(),
+    validarCampos
+], actualizarUsuarioRole);
 
 router.put('/update/statusrole/:id', [
     validarJWT,
     validarCampos
 ], actualizarStatusUsuario);
+
+
 
 router.delete('/:id', [validarJWT, validarAdminRole], borrarUsuario);
 
