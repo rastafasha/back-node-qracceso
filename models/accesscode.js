@@ -19,6 +19,7 @@ const AccessCodeSchema = new mongoose.Schema({
 
   // Campos específicos para VISITAS
   nombreVisita: { type: String }, // Nombre del invitado
+  idVisita: { type: String }, // ID único para la visita
   esTemporal: { type: Boolean, default: false },
   validoDesde: { type: Date },
   validoHasta: { type: Date },
