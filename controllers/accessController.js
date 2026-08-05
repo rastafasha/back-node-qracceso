@@ -86,6 +86,11 @@ const verificarQrPuerta = async (req, res) => {
       acceso.fechaUso = new Date();
       await acceso.save();
     }
+    // Determinar correctamente el nombre a mostrar en el registro
+    let nombreVisitante = 'Propietario';
+    if (acceso.tipo === 'VISITA') {
+      nombreVisitante = acceso.nombreVisita || 'Visita Anónima';
+    }
 
     // Respuesta exitosa. El hardware leerá "abrir: true" y mandará el pulso al relé.
     return res.status(200).json({
@@ -93,10 +98,11 @@ const verificarQrPuerta = async (req, res) => {
       mensaje: 'Acceso Concedido',
       infoAcceso: {
         tipo: acceso.tipo,
-        visitante: acceso.nombreVisita || 'Propietario',
-        casa: acceso.propiedadId.numeroCasa,
-        residente: `${acceso.propietarioId.nombre} ${acceso.propietarioId.apellido}`,
-        vehiculo: acceso.datosVehiculo
+        visitante: nombreVisitante,
+        idVisita: acceso.idVisita || null, // 👈 Enviamos el ID limpio para Angular
+        casa: acceso.propiedadId?.numeroCasa || 'N/A',
+        residente: acceso.propietarioId ? `${acceso.propietarioId.nombre} ${acceso.propietarioId.apellido}` : 'N/A',
+        vehiculo: acceso.datosVehiculo || 'N/A'
       }
     });
 
@@ -133,7 +139,6 @@ const getVisitasPorPropietario = async (req, res) => {
   }
 };
 
-
 const getBitacoraHoy = async (req, res) => {
   try {
     // 1. Calcular el rango de tiempo de "hoy" (de 00:00:00 a 23:59:59)
@@ -144,27 +149,37 @@ const getBitacoraHoy = async (req, res) => {
     finHoy.setHours(23, 59, 59, 999);
 
     // 2. Buscar en MongoDB Atlas los QR que fueron escaneados hoy
-    // Traemos (populate) los datos del dueño y su casa para mostrarlos en la lista
     const accesos = await AccessCode.find({
       usado: true,
       fechaUso: { $gte: inicioHoy, $lte: finHoy }
     })
-    .populate('propietarioId', 'nombre apellido')
-    .populate('propiedadId', 'numeroCasa')
-    .sort({ fechaUso: -1 }); // El último en entrar aparece primero
+      .populate('propietarioId', 'nombre apellido')
+      .populate('propiedadId', 'numeroCasa')
+      .sort({ fechaUso: -1 });
 
-    // 3. Calcular estadísticas numéricas básicas para los cuadros informativos
+    // 3. Calcular estadísticas numéricas básicas
     const contadorPropietarios = accesos.filter(a => a.tipo === 'PROPIETARIO').length;
     const contadorVisitas = accesos.filter(a => a.tipo === 'VISITA').length;
 
     // 4. Formatear la respuesta limpia para Angular
-    const historialFormateado = accesos.map(a => ({
-      tipo: a.tipo,
-      casa: a.propiedadId?.numeroCasa || 'N/A',
-      visitante: a.tipo === 'VISITA' ? a.nombreVisita : `${a.propietarioId?.nombre} ${a.propietarioId?.apellido}`,
-      vehiculo: a.datosVehiculo,
-      fechaUso: a.fechaUso
-    }));
+    const historialFormateado = accesos.map(a => {
+      // Determinar el nombre del visitante o propietario
+      let nombreMostrar = 'N/A';
+      if (a.tipo === 'VISITA') {
+        nombreMostrar = a.nombreVisita || 'Visita Anónima';
+      } else if (a.tipo === 'PROPIETARIO' && a.propietarioId) {
+        nombreMostrar = `${a.propietarioId.nombre} ${a.propietarioId.apellido}`;
+      }
+
+      return {
+        tipo: a.tipo,
+        casa: a.propiedadId?.numeroCasa || 'N/A',
+        visitante: nombreMostrar,
+        idVisita: a.idVisita || null, // 👈 Enviamos el ID por separado de forma limpia
+        vehiculo: a.datosVehiculo || 'N/A',
+        fechaUso: a.fechaUso
+      };
+    });
 
     return res.status(200).json({
       ok: true,
@@ -180,9 +195,11 @@ const getBitacoraHoy = async (req, res) => {
 };
 
 
+
+
 module.exports = {
   getVisitasPorPropietario,
   generarQrVisita,
   verificarQrPuerta,
-  getBitacoraHoy
+  getBitacoraHoy,
 };

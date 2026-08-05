@@ -26,6 +26,7 @@ router.post('/verificar-puerta', verificarQrPuerta);
 
 
 
+
 module.exports = router;
 
 

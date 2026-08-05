@@ -41,36 +41,38 @@ const getAllUsers = async (req, res) => {
 };
 
 
-
 const getUsuario = async (req, res) => {
-
     const id = req.params.id;
-    const uid = req.uid;
 
-    Usuario.findById(id)
-        .populate('driver')
-        .exec((err, usuario) => {
-            if (err) {
-                return res.status(500).json({
-                    ok: false,
-                    mensaje: 'Error al buscar usuario',
-                    errors: err
-                });
-            }
-            if (!usuario) {
-                return res.status(400).json({
-                    ok: false,
-                    mensaje: 'El usuario con el id ' + id + 'no existe',
-                    errors: { message: 'No existe un usuario con ese ID' }
-                });
+    try {
+        // 1. Buscar el usuario usando await de forma limpia
+        const usuario = await Usuario.findById(id);
 
-            }
-            res.status(200).json({
-                ok: true,
-                usuario: usuario
+        // 2. Validación si no existe
+        if (!usuario) {
+            return res.status(400).json({ 
+                ok: false, 
+                mensaje: `El usuario con el id ${id} no existe`, 
+                errors: { message: 'No existe un usuario con ese ID' } 
             });
+        }
+
+        // 3. Respuesta exitosa (Mongoose incluirá numdoc si existe en la BD y en el Schema)
+        return res.status(200).json({ 
+            ok: true, 
+            usuario: usuario 
         });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ 
+            ok: false, 
+            mensaje: 'Error al buscar usuario', 
+            errors: err 
+        });
+    }
 };
+
 
 
 const getUsuariobyCedula = async (req, res) => {

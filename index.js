@@ -63,6 +63,7 @@ app.use('/api/usuarios', require('./routes/usuarios'));
 app.use('/api/login', require('./routes/auth'));
 app.use('/api/access', require('./routes/accessroutes'));
 app.use('/api/property', require('./routes/property'));
+app.use('/api/uploads', require('./routes/uploads'));
 
 
 //notification
