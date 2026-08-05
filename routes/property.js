@@ -21,25 +21,16 @@ const { validarCampos } = require('../middlewares/validar-campos');
 
 router.get('/', getProperties);
 
-
-router.post('/crear', [
-    validarJWT,
-    validarCampos
-], crearProperty);
+router.post('/crear', [validarJWT,validarCampos], crearProperty);
 
 router.put('/addv/:id', agregarVehiculoPropiedad);
 
-router.put('/update/:id', [
-    validarJWT,
-    validarCampos
-], actualizarProperty);
+router.put('/update/:id', [ validarJWT,validarCampos], actualizarProperty);
 
 router.delete('/borrar/:id', validarJWT, borrarProperty);
 router.delete('/borrarv/:id/vehiculo/:vehiculoId', eliminarVehiculoPropiedad);
 
 router.get('/:id', getProperty);
 router.get('/user/:propietarioId', getPropertyByUser);
-
-
 
 module.exports = router;

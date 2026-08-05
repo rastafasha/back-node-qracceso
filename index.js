@@ -61,7 +61,7 @@ app.use(express.static('public'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/usuarios', require('./routes/usuarios'));
 app.use('/api/login', require('./routes/auth'));
-app.use('/api/access', require('./routes/accessroutes'));
+app.use('/api/accessqr', require('./routes/accessqr'));
 app.use('/api/property', require('./routes/property'));
 app.use('/api/uploads', require('./routes/uploads'));
 

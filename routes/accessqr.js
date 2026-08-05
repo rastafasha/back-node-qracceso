@@ -1,5 +1,5 @@
 /*
- Ruta: /api/access
+ Ruta: /api/accessqr
  */
 
 const { Router } = require('express');
@@ -23,9 +23,6 @@ router.post('/generar-visita', generarQrVisita);
 
 // Endpoint para que el lector de la puerta mande el token escaneado y verifique
 router.post('/verificar-puerta', verificarQrPuerta);
-
-
-
 
 module.exports = router;
 

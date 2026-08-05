@@ -1,5 +1,6 @@
 const AccessCode = require('../models/accesscode');
 const Property = require('../models/property');
+const Usuario = require('../models/usuario');
 const crypto = require('crypto');
 
 // 1. GENERAR UN QR PARA UNA VISITA (Llamado desde la App Ionic del Propietario)
@@ -50,66 +51,151 @@ const generarQrVisita = async (req, res) => {
 
 // 2. VERIFICAR EL QR (Llamado desde el Lector Físico / Dispositivo de la Puerta)
 const verificarQrPuerta = async (req, res) => {
-  try {
-    const { token } = req.body;
+    try {
+        let { token } = req.body;
+        if (!token) {
+            return res.status(400).json({ abrir: false, mensaje: 'Token no proporcionado' });
+        }
 
-    if (!token) {
-      return res.status(400).json({ abrir: false, mensaje: 'Token no proporcionado' });
+        // 1. LIMPIEZA INICIAL: Quitamos cualquier espacio o salto de línea al inicio/final del QR
+        token = token.trim();
+
+        console.log('====================================');
+        console.log('👉 REQV_TOKEN LIMPIO:', token);
+        console.log('====================================');
+
+        let acceso = null;
+        let idUsuario = null;
+        let codigoVehiculo = null;
+
+        // 2. DETECTAR EL SEPARADOR DINÁMICAMENTE
+        let separador = null;
+        if (token.includes('|')) separador = '|';
+        else if (token.includes('-')) separador = '-';
+        else if (token.includes(':')) separador = ':';
+        else if (token.includes('_')) separador = '_';
+
+        if (separador) {
+            const partes = token.split(separador);
+            // Aplicamos .trim() a cada parte para limpiar espacios ocultos
+            idUsuario = partes[0].trim();
+            codigoVehiculo = partes[1] ? partes[1].trim() : null;
+            
+            console.log(`✅ Formato Propietario Detectado. ID: "${idUsuario}", Vehículo: "${codigoVehiculo}"`);
+        } else if (token.length === 24) {
+            idUsuario = token;
+            console.log(`✅ Formato Propietario Directo (Solo UID) Detectado: "${idUsuario}"`);
+        }
+
+        // 3. PROCESAR ACCESO SI ES PROPIETARIO
+        if (idUsuario && idUsuario.length === 24) {
+            try {
+                const mongoose = require('mongoose');
+                let usuario = null;
+
+                // Intento A: Búsqueda estándar por ID
+                const objectIdFormateado = new mongoose.Types.ObjectId(idUsuario);
+                usuario = await Usuario.findById(objectIdFormateado);
+                
+                // 🕵️‍♂️ PLAN B DE EMERGENCIA: Si no lo encuentra por ID, lo rastreamos por email de prueba
+                // Reemplaza este correo por el correo real de Malcolm en tu BD para auditar el ID
+                if (!usuario) {
+                    console.log(`⚠️ ID no encontrado. Iniciando rastreo de auditoría por Email...`);
+                    usuario = await Usuario.findOne({ email: 'mercadocreativo@gmail.com' });
+                    
+                    if (usuario) {
+                        console.log('====================================================');
+                        console.log('🔥 ¡AUDITORÍA DE BASE DE DATOS TRAS CORREO ENCONTRADO! 🔥');
+                        console.log(`El ID real guardado en MongoDB es: "${usuario._id}"`);
+                        console.log(`El ID que tu QR está enviando es:  "${idUsuario}"`);
+                        console.log('====================================================');
+                    }
+                }
+
+                if (usuario) {
+                    // Usamos el ID real que sí funcionó en la base de datos
+                    const propiedad = await Propiedad.findOne({ propietarioId: usuario._id });
+                    const esVehicular = (codigoVehiculo && codigoVehiculo.toUpperCase() !== 'PEATONAL');
+
+                    acceso = {
+                        tipo: 'PROPIETARIO',
+                        propietarioId: usuario,
+                        propiedadId: propiedad || { numeroCasa: 'N/A' },
+                        esTemporal: false,
+                        tipoAcceso: esVehicular ? 'VEHICULAR' : 'PEATONAL',
+                        datosVehiculo: esVehicular ? `Placa/Código: ${codigoVehiculo}` : 'N/A'
+                    };
+                    console.log('🎉 ¡Usuario Encontrado con éxito en el sistema!');
+                } else {
+                    console.log(`❌ El ID "${idUsuario}" y el correo de prueba no existen en esta Base de Datos.`);
+                }
+            } catch (err) {
+                console.log('❌ Error en el bloque de auditoría de Propietario:', err.message);
+            }
+        }
+        
+        // 3. REGLA PARA VISITAS: Si no se procesó como propietario, buscamos en pases comunes
+        if (!acceso) {
+            console.log('🔍 Buscando en la colección de Visitas (AccessCode)...');
+            acceso = await AccessCode.findOne({ token })
+                .populate({
+                    path: 'propietarioId',
+                    model: 'Usuario', 
+                    select: 'nombre apellido first_name last_name telefono'
+                })
+                .populate('propiedadId', 'numeroCasa calleOBloque');
+        }
+
+        // VALIDACIÓN DE SEGURIDAD
+        if (!acceso) {
+            return res.status(404).json({ abrir: false, mensaje: 'Código QR no registrado o inválido' });
+        }
+
+        // VALIDACIÓN: Si es visita y ya se usó
+        if (acceso.tipo === 'VISITA' && acceso.usado) {
+            return res.status(401).json({ abrir: false, mensaje: 'Este pase de visita ya fue utilizado' });
+        }
+
+        // VALIDACIÓN: Horario de vencimiento para temporales
+        if (acceso.esTemporal) {
+            const ahora = new Date();
+            if (ahora < acceso.validoDesde || ahora > acceso.validoHasta) {
+                return res.status(401).json({ abrir: false, mensaje: 'Código QR expirado o fuera de horario' });
+            }
+        }
+
+        // ACCIÓN: Registrar uso si es visita
+        if (acceso.tipo === 'VISITA') {
+            acceso.usado = true;
+            acceso.fechaUso = new Date();
+            await acceso.save();
+        }
+
+        // Determinar nombres de forma segura
+        const stringNombre = acceso.propietarioId 
+            ? `${acceso.propietarioId.nombre || acceso.propietarioId.first_name || ''} ${acceso.propietarioId.apellido || acceso.propietarioId.last_name || ''}`.trim()
+            : 'N/A';
+
+        // Respuesta limpia para el lector y la pantalla de la garita
+        return res.status(200).json({ 
+            abrir: true, 
+            mensaje: 'Acceso Concedido', 
+            infoAcceso: { 
+                tipo: acceso.tipo, 
+                tipoAcceso: acceso.tipoAcceso || 'VEHICULAR', 
+                visitante: acceso.tipo === 'PROPIETARIO' ? 'Propietario' : (acceso.nombreVisita || 'Visita'),
+                casa: acceso.propiedadId?.numeroCasa || 'N/A',
+                residente: stringNombre,
+                vehiculo: acceso.datosVehiculo || 'N/A'
+            } 
+        });
+
+    } catch (error) {
+        console.error('Error crítico en puerta:', error);
+        return res.status(500).json({ abrir: false, error: error.message });
     }
-
-    // Buscamos el token y traemos (populate) los datos del dueño y la casa
-    const acceso = await AccessCode.findOne({ token })
-      .populate('propietarioId', 'nombre apellido telefono')
-      .populate('propiedadId', 'numeroCasa calleOBloque');
-
-    // Validación 1: ¿El token existe en la base de datos?
-    if (!acceso) {
-      return res.status(404).json({ abrir: false, mensaje: 'Código QR no registrado o inválido' });
-    }
-
-    // Validación 2: Si es visita, ¿ya fue utilizado previamente?
-    if (acceso.tipo === 'VISITA' && acceso.usado) {
-      return res.status(401).json({ abrir: false, mensaje: 'Este pase de visita ya fue utilizado' });
-    }
-
-    // Validación 3: ¿Está dentro del rango de fecha y hora permitido?
-    if (acceso.esTemporal) {
-      const ahora = new Date();
-      if (ahora < acceso.validoDesde || ahora > acceso.validoHasta) {
-        return res.status(401).json({ abrir: false, mensaje: 'Código QR expirado o fuera de horario' });
-      }
-    }
-
-    // ACCIÓN: Si todo está en orden y es visita, quemamos el token para que no se use de nuevo
-    if (acceso.tipo === 'VISITA') {
-      acceso.usado = true;
-      acceso.fechaUso = new Date();
-      await acceso.save();
-    }
-    // Determinar correctamente el nombre a mostrar en el registro
-    let nombreVisitante = 'Propietario';
-    if (acceso.tipo === 'VISITA') {
-      nombreVisitante = acceso.nombreVisita || 'Visita Anónima';
-    }
-
-    // Respuesta exitosa. El hardware leerá "abrir: true" y mandará el pulso al relé.
-    return res.status(200).json({
-      abrir: true,
-      mensaje: 'Acceso Concedido',
-      infoAcceso: {
-        tipo: acceso.tipo,
-        visitante: nombreVisitante,
-        idVisita: acceso.idVisita || null, // 👈 Enviamos el ID limpio para Angular
-        casa: acceso.propiedadId?.numeroCasa || 'N/A',
-        residente: acceso.propietarioId ? `${acceso.propietarioId.nombre} ${acceso.propietarioId.apellido}` : 'N/A',
-        vehiculo: acceso.datosVehiculo || 'N/A'
-      }
-    });
-
-  } catch (error) {
-    return res.status(500).json({ abrir: false, error: error.message });
-  }
 };
+
 
 
 const getVisitasPorPropietario = async (req, res) => {
