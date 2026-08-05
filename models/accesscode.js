@@ -7,7 +7,7 @@ const AccessCodeSchema = new mongoose.Schema({
   tipo: { type: String, enum: ['PROPIETARIO', 'VISITA'], required: true },
   
   // Relaciones
-  propietarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
+  propietarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true },
   propiedadId: { type: mongoose.Schema.Types.ObjectId, ref: 'Property', required: true },
 
   // Datos del vehículo que ingresará (Crucial para el control de guardias)

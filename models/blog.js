@@ -10,7 +10,7 @@ var BlogSchema = Schema({
     adicional: { type: String, required: true },
     price: { type: Number, required: true },
     slug: { type: String, required: true },
-    usuario: { type: Schema.Types.ObjectId, ref: 'Usuario' },
+    usuario: { type: Schema.Types.ObjectId, ref: 'user' },
     categoria: { type: Schema.Types.ObjectId, ref: 'Categoria' },
     pago: { type: Schema.Types.ObjectId, ref: 'Pago' },
     ventas: { type: Number },

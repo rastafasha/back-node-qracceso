@@ -114,7 +114,7 @@ const verificarQrPuerta = async (req, res) => {
 
                 if (usuario) {
                     // Usamos el ID real que sí funcionó en la base de datos
-                    const propiedad = await Propiedad.findOne({ propietarioId: usuario._id });
+                    const propiedad = await Property.findOne({ propietarioId: usuario._id });
                     const esVehicular = (codigoVehiculo && codigoVehiculo.toUpperCase() !== 'PEATONAL');
 
                     acceso = {
@@ -173,7 +173,7 @@ const verificarQrPuerta = async (req, res) => {
 
         // Determinar nombres de forma segura
         const stringNombre = acceso.propietarioId 
-            ? `${acceso.propietarioId.nombre || acceso.propietarioId.first_name || ''} ${acceso.propietarioId.apellido || acceso.propietarioId.last_name || ''}`.trim()
+            ? `${acceso.propietarioId.first_name || ''} ${acceso.propietarioId.last_name || ''}`.trim()
             : 'N/A';
 
         // Respuesta limpia para el lector y la pantalla de la garita
