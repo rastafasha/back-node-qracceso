@@ -21,5 +21,4 @@ var BlogSchema = Schema({
 }, { collection: 'blogs' });
 
 
-
 module.exports = model('Blog', BlogSchema);

@@ -64,7 +64,10 @@ app.use('/api/login', require('./routes/auth'));
 app.use('/api/accessqr', require('./routes/accessqr'));
 app.use('/api/property', require('./routes/property'));
 app.use('/api/uploads', require('./routes/uploads'));
-app.use('/api/pais', require('./routes/pais'));
+app.use('/api/paises', require('./routes/pais'));
+app.use('/api/ubicacion', require('./routes/ubicacion'));
+app.use('/api/empresa', require('./routes/empresa'));
+
 
 
 //notification

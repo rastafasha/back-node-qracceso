@@ -6,7 +6,8 @@
   "scripts": {
     "start:dev": "nodemon index.js",
     "start": "node index.js",
-    "seed:usuarios": "node seeders/usuarioSeeder.js"
+    "seed:usuarios": "node seeders/usuarioSeeder.js",
+    "seed:pais": "node seeders/paisSeeder.js"
   },
   "keywords": [],
   "author": "",
