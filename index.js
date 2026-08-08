@@ -64,6 +64,7 @@ app.use('/api/login', require('./routes/auth'));
 app.use('/api/accessqr', require('./routes/accessqr'));
 app.use('/api/property', require('./routes/property'));
 app.use('/api/uploads', require('./routes/uploads'));
+app.use('/api/pais', require('./routes/pais'));
 
 
 //notification

@@ -7,9 +7,14 @@ const UsuarioSchema = Schema({
     email: { type: String, require: true, unique: true },
     password: { type: String, require: true },
     telefono: { type: String, require: true  },
-    role: { type: String, enum: ['PROPIETARIO', 'ADMIN', 'GUARDIA', 'VISITA'], default: 'PROPIETARIO' },
+    role: { type: String, enum: ['PROPIETARIO', 'ADMIN', 'GUARDIA', 'VISITA', 'EMPLEADO'], default: 'PROPIETARIO' },
     activo: { type: Boolean, default: true },
     img: { type: String, },
+    ubicacionId: { 
+        type: Schema.Types.ObjectId, 
+        ref: 'Ubicacion', 
+        required: true // 🔗 Vinculo perfecto al Hijo (Casa u Oficina)
+    }
 });
 
 UsuarioSchema.method('toJSON', function() { // modificar el _id a uid, esconde el password
