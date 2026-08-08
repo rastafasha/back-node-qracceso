@@ -4,7 +4,7 @@ const PropertySchema = new mongoose.Schema({
   numeroCasa: { type: String, required: true, unique: true }, // Ej: "Maza-A-12" o "Depto-402"
   calleOBloque: { type: String },
   propietarioId: { type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true },
-  
+  empresaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Empresa', required: false },
   // Vehículos fijos del propietario
   vehiculosPropietario: [{
   placa: { 

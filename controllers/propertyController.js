@@ -4,7 +4,10 @@ const Property = require('../models/property');
 // 1. OBTENER TODAS LAS PROPIEDADES
 const getProperties = async (req, res) => {
     try {
-        const properties = await Property.find({}).sort({ createdAt: -1 });
+        const properties = await Property.find({})
+        .populate('empresaId', 'nombre')
+        .populate('propietarioId', 'first_name, last_name')
+        .sort({ createdAt: -1 });
         res.json({ ok: true, properties });
     } catch (error) {
         res.status(500).json({ ok: false, msg: 'Error al obtener propiedades' });
